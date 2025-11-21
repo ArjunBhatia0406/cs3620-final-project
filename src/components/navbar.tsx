@@ -8,7 +8,7 @@ import Image from "next/image";
 export default function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
-  const user = null;
+  const [user, setUser] = useState<any>(null);
   const logout = () => { };
 
   return (
@@ -51,16 +51,20 @@ export default function Navbar() {
             </button>
           ) : (
             <button
-              onClick={logout}
+              onClick={() => setUser(null)}   // <-- clears user
               className="px-5 py-2 bg-stone-700 text-white text-sm rounded-xl hover:bg-black transition"
             >
-              Sign Out
+              Sign Out ({user.email})
             </button>
           )}
         </div>
       </div>
 
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        setUser={setUser}
+      />
     </>
   );
 }

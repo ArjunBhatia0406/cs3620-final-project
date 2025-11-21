@@ -6,9 +6,11 @@ import toast from "react-hot-toast";
 export default function LoginModal({
   isOpen,
   onClose,
+  setUser,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  setUser: (u: any) => void;
 }) {
   if (!isOpen) return null;
 
@@ -38,19 +40,30 @@ export default function LoginModal({
 
     if (mode === "login") {
       const result = await sendRequest("/api/login", { email, password });
-      result.ok ? toast.success("Login successful!") : toast.error(result.message);
-      if (result.ok) onClose();
+      result.ok
+        ? toast.success("Login successful!")
+        : toast.error(result.message);
+
+      if (result.ok) {
+        setUser(result.user); // save logged-in user
+        onClose();
+      }
     } else {
       const result = await sendRequest("/api/register", { email, password });
-      result.ok ? toast.success("Account created!") : toast.error(result.message);
-      if (result.ok) onClose();
+      result.ok
+        ? toast.success("Account created!")
+        : toast.error(result.message);
+
+      if (result.ok) {
+        setUser(result.user); // auto-login after register (optional)
+        onClose();
+      }
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white w-[28rem] rounded-2xl shadow-xl p-8 border border-stone-300 relative">
-
         {/* Close button */}
         <button
           onClick={onClose}
@@ -95,14 +108,20 @@ export default function LoginModal({
           {mode === "login" ? (
             <>
               Don't have an account?{" "}
-              <button onClick={() => setMode("register")} className="text-stone-900 underline">
+              <button
+                onClick={() => setMode("register")}
+                className="text-stone-900 underline"
+              >
                 Register
               </button>
             </>
           ) : (
             <>
               Already have an account?{" "}
-              <button onClick={() => setMode("login")} className="text-stone-900 underline">
+              <button
+                onClick={() => setMode("login")}
+                className="text-stone-900 underline"
+              >
                 Login
               </button>
             </>
