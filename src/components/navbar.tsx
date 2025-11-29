@@ -41,10 +41,6 @@ export default function Navbar() {
             Schedule Service
           </Link>
 
-          <Link href="/" className="text-stone-700 hover:text-black text-sm">
-            Contact
-          </Link>
-
           {!user ? (
             <button
               onClick={() => setIsLoginOpen(true)}

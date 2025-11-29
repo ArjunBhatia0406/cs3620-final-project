@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         const { date, time, phoneNumber, employeeId, serviceType, car, email } = await request.json();
 
         //Validate required fields
-        if (!date || !time || !phoneNumber || !employeeId || !serviceType || !car) {
+        if (!date || !time || !phoneNumber || !employeeId || !serviceType || !car || !email) {
             return NextResponse.json(
                 { error: 'Missing required fields' },
                 { status: 400 }
@@ -69,27 +69,6 @@ export async function POST(request: NextRequest) {
                 userId = insertUser.insertId;
             }
 
-            //Update or create contact
-            const [contactRows]: any = await connection.execute(
-                'SELECT id FROM contacts WHERE user_id = ?',
-                [userId]
-            );
-
-            let contactId;
-            if (contactRows.length > 0) {
-                contactId = contactRows[0].id;
-                await connection.execute(
-                    'UPDATE contacts SET phone_number = ? WHERE user_id = ?',
-                    [phoneNumber, userId]
-                );
-            } else {
-                const [contactResult]: any = await connection.execute(
-                    'INSERT INTO contacts (phone_number, user_id) VALUES (?, ?)',
-                    [phoneNumber, userId]
-                );
-                contactId = contactResult.insertId;
-            }
-
             //Create appointment
             const appointmentDateTime = convertTo24Hour(date, time);
             const [appointmentResult]: any = await connection.execute(
@@ -97,6 +76,13 @@ export async function POST(request: NextRequest) {
                 [userId, employeeId, appointmentDateTime]
             );
             const appointmentId = appointmentResult.insertId;
+
+            //Create contact
+            const [contactResult]: any = await connection.execute(
+                'INSERT INTO contacts (phone_number, user_id, appointment_id) VALUES (?, ?, ?)',
+                [phoneNumber, userId, appointmentId]
+            );
+            const contactId = contactResult.insertId;
 
             //Create appointment details
             await connection.execute(
@@ -106,8 +92,8 @@ export async function POST(request: NextRequest) {
 
             //Create payment transaction
             await connection.execute(
-                'INSERT INTO payment_transactions (user_id, price, appointment_id) VALUES (?, ?, ?)',
-                [userId, 10.00, appointmentId]
+                'INSERT INTO payment_transactions (user_id, price) VALUES (?, ?)',
+                [userId, 10.00]
             );
 
             //Commit transaction
@@ -133,7 +119,7 @@ export async function POST(request: NextRequest) {
 
         console.error('Error creating appointment:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Internal server error ' + (error instanceof Error ? error.message : 'Unknown error')},
             { status: 500 }
         );
     } finally {
@@ -143,27 +129,53 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET() {
-    let connection;
-    try {
-        connection = await mysql.createConnection(dbConfig);
+export async function GET(request: NextRequest) {
+  let connection;
+  try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get('email');
 
-        //Get employees for the dropdown
-        const [employees]: any = await connection.execute(
-            'SELECT id, name FROM employees'
-        );
+    connection = await mysql.createConnection(dbConfig);
 
-        return NextResponse.json({ employees });
+    //If email parameter is provided, fetch user appointments
+    if (email) {
+      const [appointments]: any = await connection.query(`
+        SELECT 
+          a.id,
+          a.date,
+          a.employee_id,
+          ad.service_type,
+          ad.car,
+          c.phone_number,
+          e.name as employee_name
+        FROM appointments a
+        JOIN users u ON a.user_id = u.id
+        JOIN appointment_details ad ON a.id = ad.appointment_id
+        JOIN contacts c ON a.id = c.appointment_id
+        JOIN employees e ON a.employee_id = e.id
+        WHERE u.email = ?
+        ORDER BY a.date DESC
+      `, [email]);
 
-    } catch (error) {
-        console.error('Error fetching employees:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
-    } finally {
-        if (connection) {
-            await connection.end();
-        }
+      return NextResponse.json({ appointments });
+    } else {
+      //If no email provided, return employees list (for the dropdown)
+      const [employees]: any = await connection.execute(
+        'SELECT id, name FROM employees'
+      );
+
+      return NextResponse.json({ employees });
     }
+
+  } catch (error) {
+    console.error('Error in GET request:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
 }
