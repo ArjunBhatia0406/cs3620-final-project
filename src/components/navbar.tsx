@@ -7,7 +7,6 @@ import Image from "next/image";
 
 export default function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-
   const [user, setUser] = useState<any>(null);
   const logout = () => { };
 
@@ -38,6 +37,10 @@ export default function Navbar() {
             Records
           </Link>
 
+          <Link href="/scheduler" className="text-stone-700 hover:text-black text-sm">
+            Schedule Service
+          </Link>
+
           <Link href="/" className="text-stone-700 hover:text-black text-sm">
             Contact
           </Link>
@@ -51,7 +54,7 @@ export default function Navbar() {
             </button>
           ) : (
             <button
-              onClick={() => setUser(null)}   // <-- clears user
+              onClick={() => setUser(null)}
               className="px-5 py-2 bg-stone-700 text-white text-sm rounded-xl hover:bg-black transition"
             >
               Sign Out ({user.email})
