@@ -1,6 +1,11 @@
 ## Car Genie
 Our system will be used for a car dealership to be able to schedule appointments with customers, allow employees help customers find their dream cars by looking up through our datasets and finding the safest and desired features they want in a car, and lastly be able to buy such vehicles.
 
+ER Diagram HTML[GitHub] (https://github.com/ArjunBhatia0406/cs3620-final-project/blob/main/docs/CarGenieERDiagram.drawio.html)
+
+ER Diagram PNG [GitHub] (https://github.com/ArjunBhatia0406/cs3620-final-project/blob/main/docs/CarGenieERDiagram.png)
+
+
 ## Install for Calendar Component
 
 ```bash
