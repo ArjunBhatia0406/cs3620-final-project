@@ -29,16 +29,12 @@ export default function Navbar() {
             Home
           </Link>
 
-          <Link href="/" className="text-stone-700 hover:text-black text-sm">
-            Inventory
-          </Link>
-
-          <Link href="/" className="text-stone-700 hover:text-black text-sm">
-            Records
-          </Link>
-
           <Link href="/scheduler" className="text-stone-700 hover:text-black text-sm">
             Schedule Service
+          </Link>
+
+          <Link href="/find-a-car" className="text-stone-700 hover:text-black text-sm">
+            Find Your Car
           </Link>
 
           {!user ? (
