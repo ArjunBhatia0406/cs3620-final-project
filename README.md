@@ -13,6 +13,14 @@ npm install @mui/x-date-pickers dayjs
 
 npm install @emotion/react @emotion/styled
 ```
+
+## Install for Icons
+
+```bash
+npm install @heroicons/react
+```
+
+
 ## Getting Started
 
 First, run the development server:

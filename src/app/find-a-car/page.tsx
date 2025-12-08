@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
+import PurchaseModal from "@/components/PurchaseModal";
 
 //Define Car and FilterState
 interface Car {
@@ -55,6 +56,10 @@ export default function FindACar() {
     const [totalPages, setTotalPages] = useState(1);
     const [makes, setMakes] = useState<string[]>([]);
     const [models, setModels] = useState<string[]>([]);
+
+    //State for selected car and modal for pop up component
+    const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+    const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
     //Filters state
     const [filters, setFilters] = useState<FilterState>({
@@ -342,6 +347,41 @@ export default function FindACar() {
                                     </div>
                                 </div>
 
+                                {/* Price Range */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800">Price Range ($)</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Min Price
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="minPrice"
+                                                value={filters.minPrice}
+                                                onChange={handleFilterChange}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                placeholder="5000"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Max Price
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="maxPrice"
+                                                value={filters.maxPrice}
+                                                onChange={handleFilterChange}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                placeholder="100000"
+                                                min="0"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Condition & Type */}
                                 <div className="space-y-4">
                                     <h3 className="font-semibold text-gray-800">Condition & Type</h3>
@@ -622,6 +662,13 @@ export default function FindACar() {
                                                         </span>
                                                     </div>
 
+                                                    <div className="mb-4">
+                                                        <p className="text-sm text-gray-500">Price</p>
+                                                        <p className="text-2xl font-bold text-gray-900">
+                                                            {car.price ? `$${car.price.toLocaleString()}` : 'Price not available'}
+                                                        </p>
+                                                    </div>
+
                                                     {/* Key Specs Grid */}
                                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                                         <div>
@@ -692,14 +739,31 @@ export default function FindACar() {
                                                     {/* Action Button */}
                                                     <button
                                                         onClick={() => {
-                                                            //Navigate to purchase page or show details
-                                                            window.location.href = `/purchase?id=${car.id}`;
+                                                            setSelectedCar(car);
+                                                            setShowPurchaseModal(true);
                                                         }}
                                                         disabled={!car.available}
                                                         className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition duration-300 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
                                                     >
                                                         {car.available ? 'View Details & Purchase' : 'Not Available'}
                                                     </button>
+
+                                                    {selectedCar && (
+                                                        <PurchaseModal
+                                                            isOpen={showPurchaseModal}
+                                                            onClose={() => {
+                                                                setShowPurchaseModal(false);
+                                                                setSelectedCar(null);
+                                                            }}
+                                                            car={{
+                                                                id: selectedCar.id,
+                                                                make: selectedCar.make,
+                                                                model: selectedCar.model,
+                                                                year: selectedCar.year,
+                                                                price: selectedCar.price
+                                                            }}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

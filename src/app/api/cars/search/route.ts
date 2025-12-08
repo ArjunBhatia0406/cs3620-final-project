@@ -13,12 +13,14 @@ export async function GET(request: NextRequest) {
   let connection;
   try {
     const { searchParams } = new URL(request.url);
-    
+
     //Get filter parameters
     const make = searchParams.get('make');
     const model = searchParams.get('model');
     const minYear = searchParams.get('minYear');
     const maxYear = searchParams.get('maxYear');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
     const condition = searchParams.get('condition');
     const fuelType = searchParams.get('fuelType');
     const transmission = searchParams.get('transmission');
@@ -31,7 +33,6 @@ export async function GET(request: NextRequest) {
     const availableOnly = searchParams.get('availableOnly') === 'true';
     const limit = searchParams.get('limit') || '12';
     const page = searchParams.get('page') || '1';
-        
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     connection = await mysql.createConnection(dbConfig);
@@ -64,35 +65,36 @@ export async function GET(request: NextRequest) {
       whereConditions.push('c.make LIKE ?');
       queryParams.push(`%${make}%`);
     }
-    
+
     if (model && model.trim() !== '') {
       whereConditions.push('c.model LIKE ?');
       queryParams.push(`%${model}%`);
     }
-    
+
     addNumericCondition('c.year', minYear, '>=');
     addNumericCondition('c.year', maxYear, '<=');
-    
+
+    addNumericCondition('p.price', minPrice, '>=');
+    addNumericCondition('p.price', maxPrice, '<=');
+
     addCondition('qn.car_condition', condition, '=');
     addCondition('t.fuel_type', fuelType, '=');
     addCondition('t.vehicle_class', transmission, '=');
-    
+
     addNumericCondition('sf.rating', minSafetyRating, '>=');
     addNumericCondition('sf.rating', maxSafetyRating, '<=');
-    
+
     addNumericCondition('s.mpg', minMpg, '>=');
     addNumericCondition('s.mpg', maxMpg, '<=');
-    
+
     addNumericCondition('s.horse_power', minHorsepower, '>=');
     addNumericCondition('s.horse_power', maxHorsepower, '<=');
-    
-    //Available only filter
+
     if (availableOnly) {
       whereConditions.push('q.available = 1');
     }
 
-    //WHERE clause
-    const whereClause = whereConditions.length > 0 
+    const whereClause = whereConditions.length > 0
       ? `WHERE ${whereConditions.join(' AND ')}`
       : '';
 
@@ -108,10 +110,11 @@ export async function GET(request: NextRequest) {
         LEFT JOIN quality_new qn ON c.id = qn.car_id
         LEFT JOIN type t ON c.id = t.car_id
         LEFT JOIN saftey sf ON qn.saftey_id = sf.id
+        LEFT JOIN price p ON c.id = p.car_id
         ${whereClause}
       ) as unique_cars
     `;
-    
+
     let countResult: any;
     try {
       [countResult] = await connection.query(countQuery, queryParams);
@@ -125,41 +128,43 @@ export async function GET(request: NextRequest) {
 
     //Get filtered cars
     const carsQuery = `
-    WITH ranked_cars AS (
+      WITH ranked_cars AS (
         SELECT 
-        c.make,
-        c.model,
-        c.year,
-        c.origin,
-        l.city,
-        l.state,
-        s.mpg,
-        s.horse_power,
-        s.acceleration,
-        q.available,
-        qn.car_condition,
-        t.fuel_type,
-        t.vehicle_class,
-        CAST(sf.rating AS DECIMAL(3,1)) as safety_rating,
-        sf.blind_spot_decision,
-        sf.collision_warning,
-        -- Rank by availability and condition (available & newer condition first)
-        ROW_NUMBER() OVER (
+          c.id,
+          c.make,
+          c.model,
+          c.year,
+          c.origin,
+          l.city,
+          l.state,
+          s.mpg,
+          s.horse_power,
+          s.acceleration,
+          q.available,
+          qn.car_condition,
+          t.fuel_type,
+          t.vehicle_class,
+          CAST(sf.rating AS DECIMAL(3,1)) as safety_rating,
+          sf.blind_spot_decision,
+          sf.collision_warning,
+          p.price,
+          -- Rank by availability and condition (available & newer condition first)
+          ROW_NUMBER() OVER (
             PARTITION BY c.make, c.model, c.year, c.origin 
             ORDER BY 
-            q.available DESC, -- Available cars first
-            CASE qn.car_condition
+              q.available DESC,
+              CASE qn.car_condition
                 WHEN 'New' THEN 1
                 WHEN 'Used - Excellent' THEN 2
                 WHEN 'Used - Good' THEN 3
                 WHEN 'Used - Fair' THEN 4
                 WHEN 'Vintage' THEN 5
                 ELSE 6
-            END,
-            s.horse_power DESC, -- Higher horsepower first
-            sf.rating DESC, -- Higher safety rating first
-            RAND() -- Random tiebreaker
-        ) as rn
+              END,
+              s.horse_power DESC,
+              sf.rating DESC,
+              RAND()
+          ) as rn
         FROM car c
         LEFT JOIN stats s ON c.id = s.car_id
         LEFT JOIN location l ON c.id = l.car_id
@@ -167,9 +172,11 @@ export async function GET(request: NextRequest) {
         LEFT JOIN quality_new qn ON c.id = qn.car_id
         LEFT JOIN type t ON c.id = t.car_id
         LEFT JOIN saftey sf ON qn.saftey_id = sf.id
+        LEFT JOIN price p ON c.id = p.car_id
         ${whereClause}
-    )
-    SELECT 
+      )
+      SELECT 
+        id,
         CONCAT(make, '-', model, '-', year, '-', origin) as unique_id,
         make,
         model,
@@ -186,17 +193,18 @@ export async function GET(request: NextRequest) {
         vehicle_class as transmission,
         safety_rating,
         blind_spot_decision,
-        collision_warning
-    FROM ranked_cars
-    WHERE rn = 1 -- Only get the "best" instance of each car model
-    ORDER BY year DESC, make ASC, model ASC
-    LIMIT ? OFFSET ?
+        collision_warning,
+        price
+      FROM ranked_cars
+      WHERE rn = 1
+      ORDER BY year DESC, make ASC, model ASC
+      LIMIT ? OFFSET ?
     `;
-    
+
     let cars: any[] = [];
     try {
       const [carsResult]: any = await connection.query(
-        carsQuery, 
+        carsQuery,
         [...queryParams, parseInt(limit), offset]
       );
       cars = carsResult;
@@ -218,14 +226,14 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error searching cars:', error);
     console.error('Error stack:', error.stack);
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to search cars',
         details: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      }, 
+      },
       { status: 500 }
     );
   } finally {
