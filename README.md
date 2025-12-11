@@ -9,7 +9,9 @@ Our system will be used for a car dealership to be able to schedule appointments
 ## Demo Video and ER Diagram
 Video https://github.com/user-attachments/assets/3f3d0810-3827-4492-80bb-d521b142306f
 
-ER Diagram HTML[GitHub] (https://github.com/ArjunBhatia0406/cs3620-final-project/blob/main/docs/CarGenieERDiagram.drawio.html)
+If Video won't load click here and hit view raw and it will give you a download to our video [GitHub] (https://github.com/ArjunBhatia0406/cs3620-final-project/blob/main/docs/FinalProjectSubmissionCheckpoint3.mp4)
+
+ER Diagram HTML [GitHub] (https://github.com/ArjunBhatia0406/cs3620-final-project/blob/main/docs/CarGenieERDiagram.drawio.html)
 
 ER Diagram PNG [GitHub] (https://github.com/ArjunBhatia0406/cs3620-final-project/blob/main/docs/CarGenieERDiagram.png) (RECOMMENDED)
 
