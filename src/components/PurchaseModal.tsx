@@ -60,7 +60,7 @@ export default function PurchaseModal({ isOpen, onClose, car }: PurchaseModalPro
       }
 
       // Success - redirect to purchase page with car and sales rep info
-      window.location.href = `/purchase?carId=${car.id}&salesRepId=${data.user.id}&salesRepEmail=${encodeURIComponent(data.user.email)}&make=${encodeURIComponent(car.make)}&model=${encodeURIComponent(car.model)}&year=${car.year}`;
+      window.location.href = `/purchase?id=${car.id}&salesRepId=${data.user.id}&salesRepEmail=${encodeURIComponent(data.user.email)}&make=${encodeURIComponent(car.make)}&model=${encodeURIComponent(car.model)}&year=${car.year}`;
       
     } catch (error) {
       console.error('Error validating sales rep:', error);
